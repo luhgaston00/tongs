@@ -673,12 +673,14 @@
             
             console.log("Initializing PeerJS with ID:", multiplayerState.peerId);
             
+            // Use PeerJS cloud server with secure connection
             multiplayerState.peer = new Peer(multiplayerState.peerId, {
-                debug: 2,
+                debug: 3,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:global.stun.twilio.com:3478' }
+                        { urls: 'stun:global.stun.twilio.com:3478' },
+                        { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' }
                     ]
                 }
             });
@@ -701,9 +703,22 @@
 
             multiplayerState.peer.on('error', (err) => {
                 console.error('PeerJS error:', err);
-                updateConnectionStatus('disconnected', 'Connection error');
+                updateConnectionStatus('disconnected', 'Connection error: ' + err.type);
                 addLogEntry(`Connection error: ${err.type}`);
                 updateUI();
+            });
+
+            multiplayerState.peer.on('disconnected', () => {
+                console.log('PeerJS disconnected');
+                updateConnectionStatus('disconnected', 'Disconnected from server');
+                addLogEntry('Disconnected from server. Trying to reconnect...');
+                
+                // Try to reconnect
+                setTimeout(() => {
+                    if (multiplayerState.peer && multiplayerState.peer.disconnected) {
+                        multiplayerState.peer.reconnect();
+                    }
+                }, 5000);
             });
         }
 
@@ -742,6 +757,13 @@
                 console.log('Connection opened with:', conn.peer);
                 updateConnectionStatus('connected', `${multiplayerState.connections.length}/3 players connected`);
                 updateUI();
+                
+                // If we're not the host, request game state
+                if (!multiplayerState.isHost) {
+                    conn.send({
+                        type: 'requestGameState'
+                    });
+                }
             });
 
             conn.on('data', (data) => {
@@ -762,7 +784,12 @@
                 // Remove the connection
                 multiplayerState.connections = multiplayerState.connections.filter(c => c !== conn);
                 
-                updateConnectionStatus('connected', `${multiplayerState.connections.length}/3 players connected`);
+                if (multiplayerState.connections.length > 0) {
+                    updateConnectionStatus('connected', `${multiplayerState.connections.length}/3 players connected`);
+                } else {
+                    updateConnectionStatus('disconnected', 'All players disconnected');
+                }
+                
                 updateLobby();
                 updateConnectedPlayers();
                 updateUI();
@@ -804,7 +831,9 @@
             multiplayerState.isHost = false;
             
             // Create connection to the host
-            const conn = multiplayerState.peer.connect(hostId);
+            const conn = multiplayerState.peer.connect(hostId, {
+                reliable: true
+            });
             
             // Set up the connection handlers
             setupConnection(conn);
@@ -885,23 +914,15 @@
                 case 'action':
                     handleRemoteAction(data.action, data.data, data.sender);
                     break;
-                case 'playerJoin':
+                case 'requestGameState':
                     if (multiplayerState.isHost) {
-                        // Assign position to the new player
-                        const availablePosition = multiplayerState.players.findIndex(p => p.id === null);
-                        if (availablePosition !== -1) {
-                            multiplayerState.players[availablePosition].id = conn.peer;
-                            multiplayerState.players[availablePosition].name = data.playerName;
-                            multiplayerState.players[availablePosition].ready = true;
-                            
-                            // Update game state player names
-                            gameState.players[availablePosition].name = data.playerName;
-                            
-                            addLogEntry(`${data.playerName} joined as Player ${availablePosition + 1}`);
-                            updateLobby();
-                            updateConnectedPlayers();
-                            sendGameState();
-                        }
+                        const playerPosition = getPlayerPosition(conn.peer);
+                        conn.send({
+                            type: 'gameState',
+                            state: gameState,
+                            players: multiplayerState.players,
+                            myPosition: playerPosition
+                        });
                     }
                     break;
             }
