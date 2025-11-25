@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tong-Its Card Game - Multiplayer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0d6efd, #6610f2);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .player-area {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 200px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .player-area.player-turn {
+            border-color: var(--warning-color);
+            box-shadow: 0 0 15px var(--warning-color);
+        }
+        
+        .player-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .player-name i {
+            margin-right: 8px;
+        }
+        
+        .card {
+            width: 70px;
+            height: 100px;
+            background-color: white;
+            border-radius: 8px;
+            display: inline-flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 5px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card.back {
+            background: linear-gradient(45deg, #8B0000, #B22222);
+            color: white;
+        }
+        
+        .card.back:before {
+            content: "T";
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .card.red {
+            color: var(--danger-color);
+        }
+        
+        .card.black {
+            color: var(--dark-color);
+        }
+        
+        .card.selected {
+            border: 3px solid var(--warning-color);
+            transform: translateY(-10px);
+        }
+        
+        .card-value {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        
+        .card-suit {
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+        
+        .center-area {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .draw-pile, .discard-pile {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        
+        .pile {
+            width: 90px;
+            height: 130px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+        
+        .pile:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .pile-card {
+            width: 90px;
+            height: 130px;
+            background-color: white;
+            border-radius: 8px;
+            display: inline-flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 10px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .controls {
+            margin-top: 20px;
+        }
+        
+        .btn {
+            margin: 5px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .melds-area {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            min-height: 150px;
+        }
+        
+        .meld {
+            display: inline-block;
+            margin: 10px;
+            vertical-align: top;
+        }
+        
+        .meld-title {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: var(--warning-color);
+        }
+        
+        .game-log {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .player-score {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .lobby-container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .player-list {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0;
+        }
+        
+        .player-list-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .player-list-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .player-status {
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-ready {
+            background-color: var(--success-color);
+        }
+        
+        .status-waiting {
+            background-color: var(--warning-color);
+        }
+        
+        .game-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .card-count {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        .multiplayer-section {
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin: 5px 0;
+        }
+        
+        .status-connected {
+            background: rgba(46, 204, 113, 0.3);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+        
+        .status-disconnected {
+            background: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        
+        .status-connecting {
+            background: rgba(241, 196, 15, 0.3);
+            color: #f1c40f;
+            border: 1px solid #f1c40f;
+        }
+        
+        .banker-crown {
+            font-size: 1.5rem;
+            margin-right: 8px;
+        }
+        
+        .player-chip {
+            font-size: 1.5rem;
+            margin-right: 8px;
+        }
+        
+        .host-id-card {
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.3) 0%, rgba(243, 156, 18, 0.2) 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #f1c40f;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .host-id-title {
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .host-id-display {
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .host-instructions {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                width: 50px;
+                height: 75px;
+            }
+            
+            .card-value {
+                font-size: 1.2rem;
+            }
+            
+            .card-suit {
+                font-size: 1rem;
+            }
+            
+            .pile, .pile-card {
+                width: 60px;
+                height: 90px;
+            }
+            
+            .host-id-display {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="lobby-container">
+        <h1 class="game-title">Tong-Its</h1>
+        <p class="game-subtitle">A Filipino rummy-style card game for 3 players</p>
+        
+        <div class="multiplayer-section">
+            <div class="mb-3">
+                <div class="connection-status" id="connection-status">Disconnected</div>
+            </div>
+            
+            <!-- Host ID Card - Initially Hidden -->
+            <div id="host-id-card" class="host-id-card" style="display: none;">
+                <div class="host-id-title">
+                    <i class="fas fa-share-alt me-2"></i>Your Game ID
+                </div>
+                <div class="host-id-display" id="host-id-display">Loading...</div>
+                <div class="host-instructions">
+                    Share this ID with other players so they can join your game
+                </div>
+                <button class="btn btn-warning mt-3" id="copy-host-id">
+                    <i class="fas fa-copy me-2"></i>Copy ID
+                </button>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <button class="btn btn-primary w-100 mb-2" id="host-game">
+                        <i class="fas fa-plus-circle me-2"></i>Host Game
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="join-id" placeholder="Enter Game ID">
+                        <button class="btn btn-outline-secondary" id="join-game">
+                            <i class="fas fa-sign-in-alt me-2"></i>Join Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <h3>Players in Lobby</h3>
+                <ul class="player-list" id="player-list">
+                    <li class="player-list-item">
+                        <div class="player-status">
+                            <span class="status-indicator status-waiting"></span>
+                            <span>Waiting for players...</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h3>Game Rules</h3>
+                <div class="text-start">
+                    <p><i class="fas fa-star me-2"></i>3 players, 52-card deck</p>
+                    <p><i class="fas fa-star me-2"></i>Form melds: sets or runs</p>
+                    <p><i class="fas fa-star me-2"></i>Win by Tong-Its or lowest score</p>
+                    <p><i class="fas fa-star me-2"></i>Face cards = 10 points</p>
+                    <p><i class="fas fa-star me-2"></i>Aces = 1 point</p>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-success btn-lg mt-4" id="start-btn" disabled>
+            <i class="fas fa-play me-2"></i>Start Game
+        </button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="game-container" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-cards me-2"></i>Tong-Its</h1>
+            <div class="d-flex">
+                <div class="me-3">Room: <span id="room-code" class="fw-bold">ABCD</span></div>
+                <button class="btn btn-outline-light" id="leave-btn"><i class="fas fa-door-open me-2"></i>Leave Game</button>
+            </div>
+        </div>
+        
+        <!-- Multiplayer Connection Status -->
+        <div class="multiplayer-section">
+            <div class="connection-status" id="game-connection-status">Disconnected</div>
+            <div class="mt-2">
+                <span>Players: </span>
+                <span id="connected-players">0/3</span>
+            </div>
+        </div>
+        
+        <!-- Player 2 Area (Top) -->
+        <div class="player-area" id="player2-area">
+            <div class="player-info">
+                <div class="player-name"><i class="fas fa-user"></i> <span id="player2-name">Player 2</span></div>
+                <div class="player-score">Cards: <span id="player2-count">12</span> | Score: <span id="player2-score">0</span></div>
+            </div>
+            <div id="player2-cards" class="cards-container">
+                <!-- Player 2 cards (face down) will be displayed here -->
+            </div>
+            <div id="player2-melds" class="melds-area">
+                <!-- Player 2 melds will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- Center Area -->
+        <div class="center-area">
+            <div class="draw-pile">
+                <div class="pile" id="draw-pile">
+                    <i class="fas fa-layer-group fa-2x"></i>
+                    <div class="card-count mt-2">Draw Pile (<span id="draw-count">0</span>)</div>
+                </div>
+            </div>
+            <div class="discard-pile">
+                <div class="pile-card" id="discard-pile">
+                    <i class="fas fa-minus-circle fa-2x text-muted"></i>
+                    <div class="card-count mt-2">Discard</div>
+                </div>
+            </div>
+            <div class="controls mt-4">
+                <button class="btn btn-warning" id="draw-btn"><i class="fas fa-hand-paper me-2"></i>Draw Card</button>
+                <button class="btn btn-success" id="meld-btn" disabled><i class="fas fa-th-large me-2"></i>Form Meld</button>
+                <button class="btn btn-danger" id="discard-btn" disabled><i class="fas fa-trash me-2"></i>Discard</button>
+                <button class="btn btn-info" id="sapaw-btn" disabled><i class="fas fa-plus-circle me-2"></i>Add to Meld</button>
+                <button class="btn btn-light" id="tongits-btn" disabled><i class="fas fa-trophy me-2"></i>Declare Tong-Its</button>
+            </div>
+        </div>
+        
+        <!-- Player 1 Area (Bottom) -->
+        <div class="player-area player-turn" id="player1-area">
+            <div class="player-info">
+                <div class="player-name"><i class="fas fa-user me-2"></i> <span id="player1-name">Player 1</span> (You)</div>
+                <div class="player-score">Cards: <span id="player1-count">13</span> | Score: <span id="player1-score">0</span></div>
+            </div>
+            <div id="player1-cards" class="cards-container">
+                <!-- Player 1 cards will be displayed here -->
+            </div>
+            <div id="player1-melds" class="melds-area">
+                <!-- Player 1 melds will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- Player 3 Area (Right) -->
+        <div class="player-area" id="player3-area">
+            <div class="player-info">
+                <div class="player-name"><i class="fas fa-user"></i> <span id="player3-name">Player 3</span></div>
+                <div class="player-score">Cards: <span id="player3-count">12</span> | Score: <span id="player3-score">0</span></div>
+            </div>
+            <div id="player3-cards" class="cards-container">
+                <!-- Player 3 cards (face down) will be displayed here -->
+            </div>
+            <div id="player3-melds" class="melds-area">
+                <!-- Player 3 melds will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- Game Log -->
+        <div class="game-log" id="game-log">
+            <div class="log-entry"><i class="fas fa-info-circle me-2"></i>Welcome to Tong-Its! Waiting for players to join...</div>
+        </div>
+    </div>
+
+    <!-- Meld Modal -->
+    <div class="modal fade" id="meldModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-th-large me-2"></i>Form Meld</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select the type of meld you want to form:</p>
+                    <div id="meld-options">
+                        <!-- Meld options will be generated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-meld">Confirm Meld</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal fade" id="gameOverModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-trophy me-2"></i>Game Over</h5>
+                </div>
+                <div class="modal-body text-center" id="game-over-message">
+                    <!-- Game over message will be displayed here -->
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" id="new-game-btn">New Game</button>
+                    <button type="button" class="btn btn-secondary" id="back-to-lobby-btn">Back to Lobby</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Peer library for WebRTC connections -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- Multiplayer State ---
+        const multiplayerState = {
+            peer: null,
+            connections: [], // Array to hold connections to all players
+            isHost: false,
+            isConnected: false,
+            peerId: null,
+            players: [
+                { id: null, name: "Player 1", position: 0, ready: false },
+                { id: null, name: "Player 2", position: 1, ready: false },
+                { id: null, name: "Player 3", position: 2, ready: false }
+            ],
+            myPosition: -1
+        };
+
+        // --- Game State ---
+        let gameState = {
+            players: [
+                { name: "Player 1", hand: [], melds: [], isDealer: true, score: 0 },
+                { name: "Player 2", hand: [], melds: [], isDealer: false, score: 0 },
+                { name: "Player 3", hand: [], melds: [], isDealer: false, score: 0 }
+            ],
+            drawPile: [],
+            discardPile: [],
+            currentPlayer: 0,
+            selectedCards: [],
+            gamePhase: "draw",
+            gameOver: false,
+            roomCode: generateRoomCode()
+        };
+
+        // Card suits and values
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const suitSymbols = {
+            'hearts': '♥',
+            'diamonds': '♦',
+            'clubs': '♣',
+            'spades': '♠'
+        };
+
+        // Generate a random room code
+        function generateRoomCode() {
+            return Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+
+        // Add message to game log
+        function addLogEntry(message) {
+            const log = document.getElementById('game-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<i class="fas fa-info-circle me-2"></i>${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // --- Multiplayer Functions ---
+        function initializeMultiplayer() {
+            // Create Peer instance with a custom ID
+            multiplayerState.peerId = 'tongits-' + Math.random().toString(36).substring(2, 9);
+            
+            console.log("Initializing PeerJS with ID:", multiplayerState.peerId);
+            
+            multiplayerState.peer = new Peer(multiplayerState.peerId, {
+                debug: 2,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:global.stun.twilio.com:3478' }
+                    ]
+                }
+            });
+
+            multiplayerState.peer.on('open', (id) => {
+                console.log('PeerJS connected with ID:', id);
+                updateConnectionStatus('disconnected', 'Ready to connect');
+                addLogEntry(`Peer connection established. Your ID: ${id}`);
+                
+                // Update the host ID display if we're hosting
+                if (multiplayerState.isHost) {
+                    document.getElementById('host-id-display').textContent = id;
+                }
+            });
+
+            multiplayerState.peer.on('connection', (conn) => {
+                console.log('Incoming connection from:', conn.peer);
+                handleNewConnection(conn);
+            });
+
+            multiplayerState.peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                updateConnectionStatus('disconnected', 'Connection error');
+                addLogEntry(`Connection error: ${err.type}`);
+                updateUI();
+            });
+        }
+
+        function handleNewConnection(conn) {
+            // Add the new connection to our connections array
+            multiplayerState.connections.push(conn);
+            
+            setupConnection(conn);
+            
+            // Assign player position
+            const availablePosition = multiplayerState.players.findIndex(p => p.id === null);
+            if (availablePosition !== -1) {
+                multiplayerState.players[availablePosition].id = conn.peer;
+                multiplayerState.players[availablePosition].ready = true;
+                
+                updateConnectionStatus('connected', `${multiplayerState.connections.length}/3 players connected`);
+                addLogEntry(`Player ${availablePosition + 1} has joined the game!`);
+                
+                // Send current game state to the new player
+                if (multiplayerState.isHost) {
+                    sendGameState();
+                }
+                
+                updateLobby();
+                updateConnectedPlayers();
+            } else {
+                addLogEntry('Game is full! Maximum 3 players allowed.');
+                conn.close();
+            }
+        }
+
+        function setupConnection(conn) {
+            multiplayerState.isConnected = true;
+
+            conn.on('open', () => {
+                console.log('Connection opened with:', conn.peer);
+                updateConnectionStatus('connected', `${multiplayerState.connections.length}/3 players connected`);
+                updateUI();
+            });
+
+            conn.on('data', (data) => {
+                console.log('Received data:', data);
+                handleIncomingData(data, conn);
+            });
+
+            conn.on('close', () => {
+                console.log('Connection closed:', conn.peer);
+                // Remove the disconnected player
+                const playerIndex = multiplayerState.players.findIndex(p => p.id === conn.peer);
+                if (playerIndex !== -1) {
+                    multiplayerState.players[playerIndex].id = null;
+                    multiplayerState.players[playerIndex].ready = false;
+                    addLogEntry(`Player ${playerIndex + 1} disconnected`);
+                }
+                
+                // Remove the connection
+                multiplayerState.connections = multiplayerState.connections.filter(c => c !== conn);
+                
+                updateConnectionStatus('connected', `${multiplayerState.connections.length}/3 players connected`);
+                updateLobby();
+                updateConnectedPlayers();
+                updateUI();
+            });
+
+            conn.on('error', (err) => {
+                console.error('Connection error:', err);
+                updateConnectionStatus('disconnected', 'Connection error');
+                updateUI();
+            });
+        }
+
+        function hostGame() {
+            console.log('Hosting game with ID:', multiplayerState.peerId);
+            multiplayerState.isHost = true;
+            multiplayerState.myPosition = 0;
+            multiplayerState.players[0].id = multiplayerState.peerId;
+            multiplayerState.players[0].ready = true;
+            
+            // Show the host ID card
+            document.getElementById('host-id-card').style.display = 'block';
+            document.getElementById('host-id-display').textContent = multiplayerState.peerId;
+            
+            updateConnectionStatus('connecting', 'Waiting for players...');
+            addLogEntry('You are now the host! Share your ID: ' + multiplayerState.peerId);
+            updateLobby();
+            updateConnectedPlayers();
+            updateUI();
+        }
+
+        function joinGame() {
+            const hostId = document.getElementById('join-id').value.trim();
+            if (!hostId) {
+                addLogEntry('Please enter a host ID');
+                return;
+            }
+
+            console.log('Joining game with host ID:', hostId);
+            multiplayerState.isHost = false;
+            
+            // Create connection to the host
+            const conn = multiplayerState.peer.connect(hostId);
+            
+            // Set up the connection handlers
+            setupConnection(conn);
+            
+            // Add to connections array
+            multiplayerState.connections.push(conn);
+            
+            updateConnectionStatus('connecting', 'Connecting to host...');
+            addLogEntry(`Connecting to host ${hostId}...`);
+            updateUI();
+        }
+
+        function copyHostId() {
+            const hostId = document.getElementById('host-id-display').textContent;
+            navigator.clipboard.writeText(hostId).then(() => {
+                // Show feedback
+                const copyBtn = document.getElementById('copy-host-id');
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check me-2"></i>Copied!';
+                copyBtn.classList.remove('btn-warning');
+                copyBtn.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.classList.remove('btn-success');
+                    copyBtn.classList.add('btn-warning');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                addLogEntry('Failed to copy ID to clipboard');
+            });
+        }
+
+        function sendGameState() {
+            if (!multiplayerState.isConnected || multiplayerState.connections.length === 0) return;
+            
+            console.log('Sending game state to', multiplayerState.connections.length, 'players');
+            multiplayerState.connections.forEach(conn => {
+                if (conn.open) {
+                    const playerPosition = getPlayerPosition(conn.peer);
+                    conn.send({
+                        type: 'gameState',
+                        state: gameState,
+                        players: multiplayerState.players,
+                        myPosition: playerPosition
+                    });
+                }
+            });
+        }
+
+        function sendAction(action, data = {}) {
+            if (!multiplayerState.isConnected || multiplayerState.connections.length === 0) return;
+            
+            console.log('Sending action:', action, data);
+            multiplayerState.connections.forEach(conn => {
+                if (conn.open) {
+                    conn.send({
+                        type: 'action',
+                        action: action,
+                        data: data,
+                        sender: multiplayerState.myPosition
+                    });
+                }
+            });
+        }
+
+        function handleIncomingData(data, conn) {
+            console.log('Handling incoming data:', data);
+            switch (data.type) {
+                case 'gameState':
+                    if (!multiplayerState.isHost) {
+                        Object.assign(gameState, data.state);
+                        multiplayerState.myPosition = data.myPosition;
+                        multiplayerState.players = data.players;
+                        updateUI();
+                    }
+                    break;
+                case 'action':
+                    handleRemoteAction(data.action, data.data, data.sender);
+                    break;
+                case 'playerJoin':
+                    if (multiplayerState.isHost) {
+                        // Assign position to the new player
+                        const availablePosition = multiplayerState.players.findIndex(p => p.id === null);
+                        if (availablePosition !== -1) {
+                            multiplayerState.players[availablePosition].id = conn.peer;
+                            multiplayerState.players[availablePosition].name = data.playerName;
+                            multiplayerState.players[availablePosition].ready = true;
+                            
+                            // Update game state player names
+                            gameState.players[availablePosition].name = data.playerName;
+                            
+                            addLogEntry(`${data.playerName} joined as Player ${availablePosition + 1}`);
+                            updateLobby();
+                            updateConnectedPlayers();
+                            sendGameState();
+                        }
+                    }
+                    break;
+            }
+        }
+
+        function handleRemoteAction(action, data, sender) {
+            console.log('Handling remote action:', action, 'from player', sender);
+            switch (action) {
+                case 'drawCard':
+                    if (multiplayerState.isHost) {
+                        const card = drawCard();
+                        gameState.players[sender].hand.push(card);
+                        gameState.gamePhase = 'meld';
+                        gameState.currentPlayer = sender;
+                        addLogEntry(`${gameState.players[sender].name} drew a card.`);
+                        updateUI();
+                        sendGameState();
+                    }
+                    break;
+                case 'drawFromDiscard':
+                    if (multiplayerState.isHost) {
+                        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+                        gameState.players[sender].hand.push(topCard);
+                        gameState.discardPile.pop();
+                        gameState.gamePhase = 'meld';
+                        gameState.currentPlayer = sender;
+                        addLogEntry(`${gameState.players[sender].name} picked up the discard.`);
+                        updateUI();
+                        sendGameState();
+                    }
+                    break;
+                case 'formMeld':
+                    if (multiplayerState.isHost) {
+                        const selectedCards = data.selectedCards.map(index => 
+                            gameState.players[sender].hand[index]
+                        );
+                        
+                        if (isValidMeld(selectedCards)) {
+                            // Remove cards from hand and add to melds
+                            data.selectedCards.sort((a, b) => b - a);
+                            for (const index of data.selectedCards) {
+                                gameState.players[sender].hand.splice(index, 1);
+                            }
+                            gameState.players[sender].melds.push(selectedCards);
+                            addLogEntry(`${gameState.players[sender].name} formed a meld.`);
+                            
+                            // Check for Tong-Its
+                            if (gameState.players[sender].hand.length === 0) {
+                                declareTongits(sender);
+                                return;
+                            }
+                            
+                            updateUI();
+                            sendGameState();
+                        }
+                    }
+                    break;
+                case 'discardCard':
+                    if (multiplayerState.isHost) {
+                        const cardIndex = data.cardIndex;
+                        const card = gameState.players[sender].hand[cardIndex];
+                        
+                        // Remove card from hand and add to discard pile
+                        gameState.players[sender].hand.splice(cardIndex, 1);
+                        gameState.discardPile.push(card);
+                        
+                        addLogEntry(`${gameState.players[sender].name} discarded ${suitSymbols[card.suit]}${card.value}.`);
+                        
+                        // Move to next player
+                        gameState.currentPlayer = (sender + 1) % 3;
+                        gameState.gamePhase = 'draw';
+                        
+                        updateUI();
+                        sendGameState();
+                    }
+                    break;
+                case 'declareTongits':
+                    if (multiplayerState.isHost) {
+                        declareTongits(sender);
+                    }
+                    break;
+            }
+        }
+
+        function getPlayerPosition(peerId) {
+            return multiplayerState.players.findIndex(p => p.id === peerId);
+        }
+
+        function updateConnectionStatus(status, message) {
+            const statusEl = document.getElementById('connection-status');
+            const gameStatusEl = document.getElementById('game-connection-status');
+            
+            statusEl.textContent = message;
+            statusEl.className = 'connection-status';
+            gameStatusEl.textContent = message;
+            gameStatusEl.className = 'connection-status';
+            
+            switch (status) {
+                case 'connected':
+                    statusEl.classList.add('status-connected');
+                    gameStatusEl.classList.add('status-connected');
+                    multiplayerState.isConnected = true;
+                    break;
+                case 'disconnected':
+                    statusEl.classList.add('status-disconnected');
+                    gameStatusEl.classList.add('status-disconnected');
+                    multiplayerState.isConnected = false;
+                    break;
+                case 'connecting':
+                    statusEl.classList.add('status-connecting');
+                    gameStatusEl.classList.add('status-connecting');
+                    break;
+            }
+        }
+
+        function updateConnectedPlayers() {
+            const connectedCount = multiplayerState.players.filter(p => p.id !== null).length;
+            document.getElementById('connected-players').textContent = `${connectedCount}/3`;
+            
+            // Enable start button if at least 2 players are ready (including host)
+            document.getElementById('start-btn').disabled = connectedCount < 2;
+        }
+
+        // --- Game Functions ---
+        function initGame() {
+            // Create and shuffle deck
+            const deck = createDeck();
+            shuffleDeck(deck);
+            
+            // Deal cards
+            dealCards(deck);
+            
+            // Set up draw and discard piles
+            gameState.drawPile = deck;
+            gameState.discardPile = [drawCard()]; // Start with one card in discard pile
+            
+            // Update UI
+            updateUI();
+            
+            // Log game start
+            addLogEntry("Game started! " + gameState.players[0].name + " is the dealer.");
+            
+            // Send game state to all players
+            if (multiplayerState.isHost) {
+                sendGameState();
+            }
+        }
+
+        // Create a standard 52-card deck
+        function createDeck() {
+            const deck = [];
+            for (const suit of suits) {
+                for (const value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            return deck;
+        }
+
+        // Shuffle the deck using Fisher-Yates algorithm
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Deal cards to players
+        function dealCards(deck) {
+            // Dealer gets 13 cards, others get 12
+            for (let i = 0; i < 13; i++) {
+                gameState.players[0].hand.push(drawCardFromDeck(deck));
+            }
+            for (let i = 0; i < 12; i++) {
+                gameState.players[1].hand.push(drawCardFromDeck(deck));
+                gameState.players[2].hand.push(drawCardFromDeck(deck));
+            }
+        }
+
+        // Draw a card from the deck
+        function drawCardFromDeck(deck) {
+            return deck.pop();
+        }
+
+        // Draw a card from the draw pile
+        function drawCard() {
+            if (gameState.drawPile.length === 0) {
+                // If draw pile is empty, reshuffle discard pile (except top card)
+                const topCard = gameState.discardPile.pop();
+                gameState.drawPile = gameState.discardPile;
+                shuffleDeck(gameState.drawPile);
+                gameState.discardPile = [topCard];
+                addLogEntry("Draw pile empty! Reshuffling discard pile.");
+            }
+            return gameState.drawPile.pop();
+        }
+
+        // Update the UI to reflect current game state
+        function updateUI() {
+            // Update player areas
+            for (let i = 0; i < 3; i++) {
+                const player = gameState.players[i];
+                const playerArea = document.getElementById(`player${i+1}-area`);
+                const cardsContainer = document.getElementById(`player${i+1}-cards`);
+                const meldsContainer = document.getElementById(`player${i+1}-melds`);
+                const cardCount = document.getElementById(`player${i+1}-count`);
+                const scoreElement = document.getElementById(`player${i+1}-score`);
+                const playerName = document.getElementById(`player${i+1}-name`);
+                
+                // Update player name, card count and score
+                playerName.textContent = player.name;
+                cardCount.textContent = player.hand.length;
+                scoreElement.textContent = calculateHandValue(player.hand);
+                
+                // Clear containers
+                cardsContainer.innerHTML = '';
+                meldsContainer.innerHTML = '';
+                
+                // Highlight current player
+                if (i === gameState.currentPlayer) {
+                    playerArea.classList.add('player-turn');
+                } else {
+                    playerArea.classList.remove('player-turn');
+                }
+                
+                // Display player cards
+                if (i === multiplayerState.myPosition) {
+                    // Current player - show cards face up
+                    player.hand.forEach((card, index) => {
+                        const cardElement = createCardElement(card, index);
+                        cardsContainer.appendChild(cardElement);
+                    });
+                } else {
+                    // Other players - show cards face down
+                    for (let j = 0; j < player.hand.length; j++) {
+                        const cardElement = document.createElement('div');
+                        cardElement.className = 'card back';
+                        cardsContainer.appendChild(cardElement);
+                    }
+                }
+                
+                // Display player melds
+                player.melds.forEach((meld, meldIndex) => {
+                    const meldElement = document.createElement('div');
+                    meldElement.className = 'meld';
+                    
+                    const meldTitle = document.createElement('div');
+                    meldTitle.className = 'meld-title';
+                    meldTitle.textContent = `${player.name}'s Meld ${meldIndex + 1}`;
+                    meldElement.appendChild(meldTitle);
+                    
+                    meld.forEach(card => {
+                        const cardElement = createCardElement(card);
+                        meldElement.appendChild(cardElement);
+                    });
+                    
+                    meldsContainer.appendChild(meldElement);
+                });
+            }
+            
+            // Update draw and discard piles
+            document.getElementById('draw-count').textContent = gameState.drawPile.length;
+            
+            const discardPileElement = document.getElementById('discard-pile');
+            if (gameState.discardPile.length > 0) {
+                const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+                discardPileElement.innerHTML = `
+                    <div class="card-value ${getCardColor(topCard.suit)}">${topCard.value}</div>
+                    <div class="card-suit ${getCardColor(topCard.suit)}">${suitSymbols[topCard.suit]}</div>
+                    <div class="card-count mt-2">Discard</div>
+                `;
+                discardPileElement.className = 'pile-card';
+            } else {
+                discardPileElement.innerHTML = `
+                    <i class="fas fa-minus-circle fa-2x text-muted"></i>
+                    <div class="card-count mt-2">Discard</div>
+                `;
+                discardPileElement.className = 'pile-card';
+            }
+            
+            // Update button states based on game phase
+            updateButtonStates();
+        }
+
+        // Create a card element
+        function createCardElement(card, index = null) {
+            const cardElement = document.createElement('div');
+            cardElement.className = `card ${getCardColor(card.suit)}`;
+            cardElement.innerHTML = `
+                <div class="card-value">${card.value}</div>
+                <div class="card-suit">${suitSymbols[card.suit]}</div>
+            `;
+            
+            if (index !== null) {
+                cardElement.dataset.index = index;
+                cardElement.addEventListener('click', () => selectCard(index));
+            }
+            
+            return cardElement;
+        }
+
+        // Get card color based on suit
+        function getCardColor(suit) {
+            return suit === 'hearts' || suit === 'diamonds' ? 'red' : 'black';
+        }
+
+        // Update button states based on game phase
+        function updateButtonStates() {
+            const drawBtn = document.getElementById('draw-btn');
+            const meldBtn = document.getElementById('meld-btn');
+            const discardBtn = document.getElementById('discard-btn');
+            const sapawBtn = document.getElementById('sapaw-btn');
+            const tongitsBtn = document.getElementById('tongits-btn');
+            
+            // Only enable actions for current player
+            if (gameState.currentPlayer !== multiplayerState.myPosition) {
+                drawBtn.disabled = true;
+                meldBtn.disabled = true;
+                discardBtn.disabled = true;
+                sapawBtn.disabled = true;
+                tongitsBtn.disabled = true;
+                return;
+            }
+            
+            // Enable/disable based on game phase
+            switch(gameState.gamePhase) {
+                case 'draw':
+                    drawBtn.disabled = false;
+                    meldBtn.disabled = true;
+                    discardBtn.disabled = true;
+                    sapawBtn.disabled = true;
+                    tongitsBtn.disabled = true;
+                    break;
+                case 'meld':
+                    drawBtn.disabled = true;
+                    meldBtn.disabled = gameState.selectedCards.length === 0;
+                    discardBtn.disabled = gameState.selectedCards.length !== 1;
+                    sapawBtn.disabled = gameState.selectedCards.length !== 1 || !canSapaw(gameState.selectedCards[0]);
+                    tongitsBtn.disabled = !canDeclareTongits();
+                    break;
+                case 'discard':
+                    drawBtn.disabled = true;
+                    meldBtn.disabled = true;
+                    discardBtn.disabled = gameState.selectedCards.length !== 1;
+                    sapawBtn.disabled = true;
+                    tongitsBtn.disabled = true;
+                    break;
+            }
+        }
+
+        // Select a card from player's hand
+        function selectCard(index) {
+            if (gameState.currentPlayer !== multiplayerState.myPosition) return;
+            
+            const cardElement = document.querySelector(`#player1-cards .card[data-index="${index}"]`);
+            
+            if (gameState.selectedCards.includes(index)) {
+                // Deselect card
+                gameState.selectedCards = gameState.selectedCards.filter(i => i !== index);
+                cardElement.classList.remove('selected');
+            } else {
+                // Select card
+                if (gameState.gamePhase === 'meld') {
+                    // In meld phase, can select multiple cards
+                    gameState.selectedCards.push(index);
+                    cardElement.classList.add('selected');
+                } else if (gameState.gamePhase === 'discard') {
+                    // In discard phase, can only select one card
+                    gameState.selectedCards = [index];
+                    document.querySelectorAll('#player1-cards .card.selected').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                    cardElement.classList.add('selected');
+                }
+            }
+            
+            updateButtonStates();
+        }
+
+        // Draw a card from the draw pile
+        function handleDraw() {
+            if (gameState.gamePhase !== 'draw') return;
+            
+            if (multiplayerState.isHost) {
+                const card = drawCard();
+                gameState.players[multiplayerState.myPosition].hand.push(card);
+                gameState.gamePhase = 'meld';
+                addLogEntry(`${gameState.players[multiplayerState.myPosition].name} drew a card from the draw pile.`);
+                updateUI();
+                sendGameState();
+            } else {
+                sendAction('drawCard');
+            }
+        }
+
+        // Draw from discard pile (if it can be melded immediately)
+        function handleDrawFromDiscard() {
+            if (gameState.gamePhase !== 'draw') return;
+            
+            if (multiplayerState.isHost) {
+                const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+                gameState.players[multiplayerState.myPosition].hand.push(topCard);
+                gameState.discardPile.pop();
+                gameState.gamePhase = 'meld';
+                addLogEntry(`${gameState.players[multiplayerState.myPosition].name} picked up the discard.`);
+                updateUI();
+                sendGameState();
+            } else {
+                sendAction('drawFromDiscard');
+            }
+        }
+
+        // Check if a card can be added to an existing meld (sapaw)
+        function canSapaw(cardIndex) {
+            const card = gameState.players[multiplayerState.myPosition].hand[cardIndex];
+            
+            // Check all melds from all players
+            for (const player of gameState.players) {
+                for (const meld of player.melds) {
+                    // Check if card can be added to this meld
+                    if (canAddToMeld(meld, card)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        // Check if a card can be added to a meld
+        function canAddToMeld(meld, card) {
+            // For sets (same rank)
+            if (meld.every(c => c.value === meld[0].value)) {
+                return card.value === meld[0].value && !meld.some(c => c.suit === card.suit);
+            }
+            
+            // For runs (same suit, consecutive values)
+            if (meld.every(c => c.suit === meld[0].suit)) {
+                const values = meld.map(c => values.indexOf(c.value)).sort((a, b) => a - b);
+                const cardValueIndex = values.indexOf(card.value);
+                
+                // Check if card extends the run
+                if (card.suit === meld[0].suit) {
+                    if (cardValueIndex === values[0] - 1 || cardValueIndex === values[values.length - 1] + 1) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        // Handle sapaw action - adding a card to an existing meld
+        function handleSapaw() {
+            if (gameState.selectedCards.length !== 1) return;
+            
+            const cardIndex = gameState.selectedCards[0];
+            const card = gameState.players[multiplayerState.myPosition].hand[cardIndex];
+            
+            // Find all melds that this card can be added to
+            const validMelds = [];
+            for (let p = 0; p < gameState.players.length; p++) {
+                for (let m = 0; m < gameState.players[p].melds.length; m++) {
+                    if (canAddToMeld(gameState.players[p].melds[m], card)) {
+                        validMelds.push({ playerIndex: p, meldIndex: m });
+                    }
+                }
+            }
+            
+            if (validMelds.length === 0) {
+                alert("This card cannot be added to any existing meld.");
+                return;
+            }
+            
+            // For simplicity, just add to the first valid meld
+            const { playerIndex, meldIndex } = validMelds[0];
+            
+            if (multiplayerState.isHost) {
+                // Add card to meld
+                gameState.players[playerIndex].melds[meldIndex].push(card);
+                
+                // Remove card from hand
+                gameState.players[multiplayerState.myPosition].hand.splice(cardIndex, 1);
+                gameState.selectedCards = [];
+                
+                addLogEntry(`${gameState.players[multiplayerState.myPosition].name} added a card to ${gameState.players[playerIndex].name}'s meld.`);
+                
+                // Check for Tong-Its
+                if (gameState.players[multiplayerState.myPosition].hand.length === 0) {
+                    declareTongits(multiplayerState.myPosition);
+                    return;
+                }
+                
+                updateUI();
+                sendGameState();
+            } else {
+                sendAction('sapawCard', { 
+                    cardIndex, 
+                    targetPlayer: playerIndex, 
+                    targetMeld: meldIndex 
+                });
+                gameState.selectedCards = [];
+                updateButtonStates();
+            }
+        }
+
+        // Check if player can declare Tong-Its
+        function canDeclareTongits() {
+            return gameState.players[multiplayerState.myPosition].hand.length === 0;
+        }
+
+        // Form a meld with selected cards
+        function handleFormMeld() {
+            if (gameState.selectedCards.length < 3) return;
+            
+            const selectedCards = gameState.selectedCards.map(index => 
+                gameState.players[multiplayerState.myPosition].hand[index]
+            );
+            
+            // Check if selected cards form a valid meld
+            if (isValidMeld(selectedCards)) {
+                if (multiplayerState.isHost) {
+                    // Remove cards from hand and add to melds
+                    gameState.selectedCards.sort((a, b) => b - a); // Sort in descending order to remove correctly
+                    for (const index of gameState.selectedCards) {
+                        gameState.players[multiplayerState.myPosition].hand.splice(index, 1);
+                    }
+                    gameState.players[multiplayerState.myPosition].melds.push(selectedCards);
+                    gameState.selectedCards = [];
+                    addLogEntry(`${gameState.players[multiplayerState.myPosition].name} formed a meld.`);
+                    
+                    // Check for Tong-Its
+                    if (gameState.players[multiplayerState.myPosition].hand.length === 0) {
+                        declareTongits(multiplayerState.myPosition);
+                        return;
+                    }
+                    
+                    updateUI();
+                    sendGameState();
+                } else {
+                    sendAction('formMeld', {
+                        selectedCards: gameState.selectedCards
+                    });
+                    gameState.selectedCards = [];
+                    updateButtonStates();
+                }
+            } else {
+                alert("Selected cards do not form a valid meld. A meld must be either:\n- A set (3 or 4 cards of the same rank)\n- A run (3 or more consecutive cards of the same suit)");
+            }
+        }
+
+        // Check if cards form a valid meld
+        function isValidMeld(cards) {
+            if (cards.length < 3) return false;
+            
+            // Check for set (same rank)
+            const isSet = cards.every(card => card.value === cards[0].value);
+            if (isSet) return true;
+            
+            // Check for run (same suit, consecutive values)
+            const isSameSuit = cards.every(card => card.suit === cards[0].suit);
+            if (!isSameSuit) return false;
+            
+            const valueIndices = cards.map(card => values.indexOf(card.value)).sort((a, b) => a - b);
+            for (let i = 1; i < valueIndices.length; i++) {
+                if (valueIndices[i] !== valueIndices[i-1] + 1) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Discard selected card
+        function handleDiscard() {
+            if (gameState.selectedCards.length !== 1) return;
+            
+            const cardIndex = gameState.selectedCards[0];
+            
+            if (multiplayerState.isHost) {
+                const card = gameState.players[multiplayerState.myPosition].hand[cardIndex];
+                
+                // Remove card from hand and add to discard pile
+                gameState.players[multiplayerState.myPosition].hand.splice(cardIndex, 1);
+                gameState.discardPile.push(card);
+                gameState.selectedCards = [];
+                
+                addLogEntry(`${gameState.players[multiplayerState.myPosition].name} discarded ${suitSymbols[card.suit]}${card.value}.`);
+                
+                // Move to next player
+                gameState.currentPlayer = (multiplayerState.myPosition + 1) % 3;
+                gameState.gamePhase = 'draw';
+                
+                updateUI();
+                sendGameState();
+            } else {
+                sendAction('discardCard', { cardIndex });
+                gameState.selectedCards = [];
+                updateButtonStates();
+            }
+        }
+
+        // Declare Tong-Its (win by emptying hand)
+        function declareTongits(playerIndex) {
+            gameState.gameOver = true;
+            const message = `${gameState.players[playerIndex].name} wins by Tong-Its!`;
+            addLogEntry(message);
+            
+            document.getElementById('game-over-message').innerHTML = `
+                <h4 class="text-success">${message}</h4>
+                <p>Congratulations! ${gameState.players[playerIndex].name} emptied their hand completely.</p>
+            `;
+            const gameOverModal = new bootstrap.Modal(document.getElementById('gameOverModal'));
+            gameOverModal.show();
+            
+            if (multiplayerState.isHost) {
+                sendGameState();
+            }
+        }
+
+        // Get card value for scoring
+        function getCardValue(card) {
+            if (['J', 'Q', 'K'].includes(card.value)) return 10;
+            if (card.value === 'A') return 1;
+            return parseInt(card.value);
+        }
+
+        // Calculate total value of a hand
+        function calculateHandValue(hand) {
+            return hand.reduce((sum, card) => sum + getCardValue(card), 0);
+        }
+
+        // Update the lobby display
+        function updateLobby() {
+            const playerList = document.getElementById('player-list');
+            playerList.innerHTML = '';
+            
+            multiplayerState.players.forEach((player, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'player-list-item';
+                
+                if (player.id) {
+                    listItem.innerHTML = `
+                        <div class="player-status">
+                            <span class="status-indicator status-ready"></span>
+                            <span>${player.name} ${player.id === multiplayerState.peerId ? '(You)' : ''}</span>
+                        </div>
+                        <div>
+                            <span class="badge bg-success">Ready</span>
+                        </div>
+                    `;
+                } else {
+                    listItem.innerHTML = `
+                        <div class="player-status">
+                            <span class="status-indicator status-waiting"></span>
+                            <span>Waiting for player...</span>
+                        </div>
+                        <div>
+                            <span class="badge bg-warning">Empty</span>
+                        </div>
+                    `;
+                }
+                
+                playerList.appendChild(listItem);
+            });
+        }
+
+        // Start the game
+        function startGame() {
+            // Hide lobby, show game screen
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            
+            // Update room code
+            document.getElementById('room-code').textContent = gameState.roomCode;
+            
+            // Initialize the game
+            initGame();
+        }
+
+        // Leave the game and return to lobby
+        function leaveGame() {
+            // Close all connections
+            if (multiplayerState.connections) {
+                multiplayerState.connections.forEach(conn => {
+                    conn.close();
+                });
+                multiplayerState.connections = [];
+            }
+            
+            // Reset player states
+            multiplayerState.players.forEach(player => {
+                player.id = null;
+                player.ready = false;
+            });
+            multiplayerState.myPosition = -1;
+            multiplayerState.isHost = false;
+            multiplayerState.isConnected = false;
+            
+            // Hide the host ID card
+            document.getElementById('host-id-card').style.display = 'none';
+            
+            // Reset game state
+            resetGame();
+            
+            // Show lobby, hide game screen
+            document.getElementById('lobby-screen').style.display = 'block';
+            document.getElementById('game-screen').style.display = 'none';
+            
+            // Update lobby
+            updateLobby();
+            updateConnectionStatus('disconnected', 'Disconnected');
+        }
+
+        function resetGame() {
+            gameState.players = [
+                { name: "Player 1", hand: [], melds: [], isDealer: true, score: 0 },
+                { name: "Player 2", hand: [], melds: [], isDealer: false, score: 0 },
+                { name: "Player 3", hand: [], melds: [], isDealer: false, score: 0 }
+            ];
+            gameState.drawPile = [];
+            gameState.discardPile = [];
+            gameState.currentPlayer = 0;
+            gameState.selectedCards = [];
+            gameState.gamePhase = "draw";
+            gameState.gameOver = false;
+            
+            addLogEntry('Game reset!');
+            updateUI();
+        }
+
+        // Event listeners
+        document.getElementById('host-game').addEventListener('click', hostGame);
+        document.getElementById('join-game').addEventListener('click', joinGame);
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('leave-btn').addEventListener('click', leaveGame);
+        document.getElementById('draw-btn').addEventListener('click', handleDraw);
+        document.getElementById('meld-btn').addEventListener('click', handleFormMeld);
+        document.getElementById('discard-btn').addEventListener('click', handleDiscard);
+        document.getElementById('sapaw-btn').addEventListener('click', handleSapaw);
+        document.getElementById('tongits-btn').addEventListener('click', function() {
+            if (multiplayerState.isHost) {
+                declareTongits(multiplayerState.myPosition);
+            } else {
+                sendAction('declareTongits');
+            }
+        });
+        document.getElementById('copy-host-id').addEventListener('click', copyHostId);
+        document.getElementById('new-game-btn').addEventListener('click', function() {
+            bootstrap.Modal.getInstance(document.getElementById('gameOverModal')).hide();
+            resetGame();
+            if (multiplayerState.isHost) {
+                initGame();
+            }
+        });
+        document.getElementById('back-to-lobby-btn').addEventListener('click', function() {
+            bootstrap.Modal.getInstance(document.getElementById('gameOverModal')).hide();
+            leaveGame();
+        });
+
+        // Allow drawing from discard pile by clicking on it
+        document.getElementById('discard-pile').addEventListener('click', function() {
+            if (gameState.gamePhase === 'draw' && gameState.currentPlayer === multiplayerState.myPosition) {
+                handleDrawFromDiscard();
+            }
+        });
+
+        // Initialize multiplayer and UI
+        initializeMultiplayer();
+        updateLobby();
+        updateUI();
+    </script>
+</body>
+</html>
